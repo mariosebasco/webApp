@@ -285,6 +285,8 @@ function handleGetUser(url) {
 		    btn.className = "btn-link";
 		    
 		    btn.addEventListener("click", function() {
+			markerGroup.clearLayers();
+			lineLayerGroup.clearLayers();
 			handlePostUser("set_map", this.innerHTML);
 		    });
 		    
