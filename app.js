@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
-var ROS_DIR = "/home/robot/catkin_ws/src/hdt_cub/hdt_cub_navigation/gps_files/";
+var ROS_DIR = "/home/robot/catkin_ws/src/hdt_vehicle/hdt_vehicle_navigation/gps_files/";
 
 /* ************************************************** */
 /*                                                    */
@@ -19,15 +19,15 @@ var ROS_DIR = "/home/robot/catkin_ws/src/hdt_cub/hdt_cub_navigation/gps_files/";
 /* ************************************************** */
 // Require rosnodejs itself
 const rosnodejs = require('rosnodejs');
-// Requires the std_msgs message package
-//const odomMsg = rosnodejs.require('nav_msgs').msg.Odometry;
+
+const odomMsg = rosnodejs.require('nav_msgs').msg.Odometry
 const logMsg = rosnodejs.require('rosgraph_msgs').msg.Log;
 const gpsMsg = rosnodejs.require('sensor_msgs').msg.NavSatFix;
 
 rosnodejs.initNode('/rosnode_js_node');
 const nh = rosnodejs.nh;
 
-var veh_lat, veh_lng, ros_string;
+var veh_lat, veh_lng, des_lat = 0.0, des_lon = 0.0, orientation = 0.0, ros_string;
 var received_data = "false";
 
 function gpsCB(msg) {
@@ -36,13 +36,30 @@ function gpsCB(msg) {
     received_data = "true";
 }
 
+function desCB(msg) {
+    des_lat = msg.latitude;
+    des_lon = msg.longitude;
+}
+
 function logCB(msg) {
     ros_string = msg.msg;
 }
 
-//const odom_sub = nh.subscribe('/odom', odomMsg, odomCB);
+function odomCB(msg) {
+    var q0 = msg.pose.pose.orientation.w;
+    var q1 = msg.pose.pose.orientation.x;
+    var q2 = msg.pose.pose.orientation.y;
+    var q3 = msg.pose.pose.orientation.z;
+    
+    orientation = Math.atan2(2.0 * (q3 * q0 + q1 * q2) , - 1.0 + 2.0 * (q0 * q0 + q1 * q1));
+    //console.log(orientation);
+}
+
+const des_pos_sub = nh.subscribe('des_LL', gpsMsg, desCB);
+// const gps_sub = nh.subscribe('/gps/fix', gpsMsg, gpsCB);
 const gps_sub = nh.subscribe('/fix', gpsMsg, gpsCB);
 const log_sub = nh.subscribe('/rosout', logMsg, logCB);
+const odom_sub = nh.subscribe('/odom', odomMsg, odomCB);
 
 /* ************************************************** */
 /*                                                    */
@@ -59,7 +76,10 @@ app.get('/helpers.js',function(req,res){
 
 
 app.get('/ros_data', function (req, res) {
-    var text = '{"lat":'+ veh_lat  +', "lon":'+ veh_lng +', "info":'+ JSON.stringify(ros_string)  +'}'
+    var text = '{"lat":'+ veh_lat  +', "lon":'+ veh_lng +', "des_lat":'+ des_lat +', "des_lon":'+ des_lon +', "info":'+ JSON.stringify(ros_string)  +'}';
+    //console.log(text);
+    // var text = '{"lat":'+ veh_lat  +', "lon":'+ veh_lng +', "info":'+ JSON.stringify(ros_string)  +'}';
+    
     ros_string = "";
     res.send(text);
 });

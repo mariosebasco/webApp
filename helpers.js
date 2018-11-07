@@ -1,6 +1,7 @@
 
 //Set up map 
 var map = L.map('mapid').setView([42.0484, -87.6974], 17);
+// var map = L.map('mapid').setView([38.26407, -77.46217], 20);
 
 var osm = L.tileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 //var googleLayer = new L.Google('SATELLITE');
@@ -24,6 +25,13 @@ var vehicle_circle = L.circleMarker([0, 0], {
     fillColor: '#f03',
     fillOpacity: 0.5,
     radius: 10
+});
+
+var des_circle = L.circleMarker([0, 0], {
+    color: 'blue',
+    fillColor: '#fff',
+    fillOpacity: 1.0,
+    radius: 5
 });
 
 var marker_array = new Array();
@@ -250,7 +258,8 @@ function handleGetUser(url) {
 
 		//update vehicle location on map
 		vehicle_circle.setLatLng([data.lat, data.lon]).addTo(map);
-
+		des_circle.setLatLng([data.des_lat, data.des_lon]).addTo(map);
+		
 		//update info list
 		if(data.info != "") {
 		    var info_list = document.getElementById('ros_list');
