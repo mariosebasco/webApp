@@ -1,7 +1,8 @@
 
 //Set up map 
-var map = L.map('mapid').setView([42.0484, -87.6974], 17);
-// var map = L.map('mapid').setView([38.26407, -77.46217], 20);
+// var map = L.map('mapid').setView([32.3710, -84.8082], 17);
+// var map = L.map('mapid').setView([42.0484, -87.6974], 17);
+var map = L.map('mapid').setView([38.26407, -77.46217], 18);
 
 var osm = L.tileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
 //var googleLayer = new L.Google('SATELLITE');
@@ -157,6 +158,18 @@ function writeFile() {
     }
 }
 
+function stopVehicle() {
+    handlePostUser("run_stop_vehicle", '');
+}
+
+function iopOn() {
+    handleGetUser("iop_on");
+}
+
+function iopOff() {
+    handlePostUser("iop_off", '');
+}
+
 //XMLHttpRequest
 var should_start = false;
 var creating_map = false;
@@ -219,6 +232,32 @@ function handlePostUser(url, input_data) {
 	xhr_post.send(JSON.stringify(data));
 	
 	break;
+
+    case "run_stop_vehicle":
+	var xhr_post = new XMLHttpRequest();
+	
+	xhr_post.open("POST", url, true);
+	xhr_post.setRequestHeader("Content-Type", "application/json");
+	xhr_post.send();
+	
+	break;
+    // case "iop_on":
+    // 	var xhr_post = new XMLHttpRequest();
+	
+    // 	xhr_post.open("POST", url, true);
+    // 	xhr_post.setRequestHeader("Content-Type", "application/json");
+    // 	xhr_post.send();
+	
+    // 	break;
+    case "iop_off":
+	var xhr_post = new XMLHttpRequest();
+	
+	xhr_post.open("POST", url, true);
+	xhr_post.setRequestHeader("Content-Type", "application/json");
+	xhr_post.send();
+	
+	break;
+	
     default:
 	break;
     }
@@ -312,7 +351,8 @@ function handleGetUser(url) {
 
 //return video stream
 function handleVideo() {
-    window.open("http://192.168.1.203/en/player/mjpeg_hd.asp", "Video Stream", "height=500,width=800");   
+    //window.open("http://192.168.1.203/en/player/mjpeg_hd.asp", "Video Stream", "height=500,width=800");
+    window.open("http://localhost:8080/stream?topic=/front_camera/image_raw/compressed", "Video Stream", "height=500,width=800");   
 }
 
 function handleCreateNewMap() {

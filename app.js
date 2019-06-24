@@ -4,6 +4,7 @@ const fs = require('fs');
 const app = express()
 const path = require("path");
 const bodyParser = require("body-parser");
+const http = require('http');
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -42,7 +43,9 @@ function desCB(msg) {
 }
 
 function logCB(msg) {
-    ros_string = msg.msg;
+    if(msg.name == "/state_controller") {
+	ros_string = msg.msg;
+    }
 }
 
 function odomCB(msg) {
@@ -74,7 +77,6 @@ app.get('/helpers.js',function(req,res){
   res.sendFile(path.join(__dirname+'/helpers.js'));
 });
 
-
 app.get('/ros_data', function (req, res) {
     var text = '{"lat":'+ veh_lat  +', "lon":'+ veh_lng +', "des_lat":'+ des_lat +', "des_lon":'+ des_lon +', "info":'+ JSON.stringify(ros_string)  +'}';
     //console.log(text);
@@ -89,30 +91,52 @@ app.get('/start', function (req, res) {
 });
 
 app.get('/maps', function (req, res) {
-    fs.readFile("maps/maps.txt", 'utf8', function(err, data) {
+    fs.readFile("maps/maps", 'utf8', function(err, data) {
 	if (err) throw err;
 	res.send(data);
     });
 });
 
+app.post('/run_stop_vehicle', function(req, res) {
+    nh.setParam("/start_navigation", false);
+    console.log("SET NAVIGATION TO FALSE");
+});
+
+
+app.get('/iop_on', function(req, res) {
+    // nh.setParam("/iop_navigation", true);
+    console.log("IOP ON");
+});
+
+
+app.post('/iop_off', function(req, res) {
+    //nh.setParam("/iop_navigation", false);
+    console.log("IOP OFF");
+});
 
 app.post('/run_custom_map', function (req, res) {
     //delete maps already there
-    if(fs.existsSync('maps/final_map.txt')) {
-	fs.unlink('maps/final_map.txt', (err) => {if (err) throw err;});
-    }
-    if(fs.existsSync('maps/event_file.txt')) {
-	fs.unlink('maps/event_file.txt', (err) => {if (err) throw err;});
-    }
-    
-    console.log(req.body);
-    var map_logger = fs.createWriteStream('maps/final_map.txt', {flags: 'a'})
-    var event_logger = fs.createWriteStream('maps/event_file.txt', {flags: 'a'})
+    // if(fs.existsSync('maps/final_map.txt')) {
+    // 	fs.unlink('maps/final_map.txt', (err) => {if (err) throw err;});
+    // }
+    // if(fs.existsSync('maps/event_file.txt')) {
+    // 	fs.unlink('maps/event_file.txt', (err) => {if (err) throw err;});
+    // }
+    // if(fs.existsSync('maps/prev_map')) {
+    // 	fs.unlink('maps/prev_map', (err) => {if (err) throw err;});
+    // }
+
+    //console.log(req.body);
+    var map_logger = fs.createWriteStream('maps/final_map.txt', {flags: 'w'})
+    var event_logger = fs.createWriteStream('maps/event_file.txt', {flags: 'w'})
+    var prev_map_logger = fs.createWriteStream('maps/prev_map', {flags: 'w'})
 
     var num_points = req.body.lats.length;
     for (i = 0; i < num_points; i++) {
 	map_logger.write(req.body.lats[i] + '\n');
 	map_logger.write(req.body.lngs[i] + '\n');
+	prev_map_logger.write(req.body.lats[i] + '\n');
+	prev_map_logger.write(req.body.lngs[i] + '\n');
 
 	if(req.body.evns[i] == "yes") {
 	    event_logger.write((i + 1) + '\n');
@@ -121,11 +145,14 @@ app.post('/run_custom_map', function (req, res) {
     }
     map_logger.close();
     event_logger.close();
+    prev_map_logger.close();
+    
     //transfer the file to the right directory
     fs.rename('maps/final_map.txt', ROS_DIR + 'final_map.txt', function(err) {if(err) throw err;});
     fs.rename('maps/event_file.txt', ROS_DIR + 'event_file.txt', function(err) {if(err) throw err;});
     
     nh.setParam("/start_navigation", true);
+    console.log("SET NAVIGATION TO TRUE - 2");
 });
 
 app.post('/set_map', function (req, res) {
@@ -137,24 +164,42 @@ app.post('/set_map', function (req, res) {
 });
 
 app.post('/run_set_map', function (req, res) {
-    if(fs.existsSync('maps/final_map.txt')) {
-	fs.unlink('maps/final_map.txt', (err) => {if (err) throw err;});
-    }
-    
     var title = 'maps/' + req.body.map;
-    var map_logger = fs.createWriteStream('./maps/final_map.txt', {flags: 'a'})
-    
-    fs.readFile(title, 'utf8', function(err, data) {
-	if (err) throw err;
-	map_logger.write(data);
-	map_logger.close();
-    });
 
-    // transfer the file to the right directory
+    if(req.body.map != 'prev_map') {
+	var map_logger = fs.createWriteStream('./maps/final_map.txt', {flags: 'w'})
+	var prev_map_logger = fs.createWriteStream('./maps/prev_map', {flags: 'w'})
+	
+	fs.readFile(title, 'utf8', function(err, data) {
+	    if (err) throw err;
+	    map_logger.write(data);
+	    prev_map_logger.write(data);
+	    
+	    map_logger.close();
+	    prev_map_logger.close();
+	});
+    }
+    else {
+	var map_logger = fs.createWriteStream('./maps/final_map.txt', {flags: 'w'})
+	
+	fs.readFile(title, 'utf8', function(err, data) {
+	    if (err) throw err;
+	    map_logger.write(data);
+	    map_logger.close();
+	});
+    }
+
+    // transfer the file to the right directory 
     fs.rename('maps/final_map.txt', ROS_DIR + 'final_map.txt', function(err) {if(err) throw err;});
-
+    
     nh.setParam("/start_navigation", true);
+    console.log("SET NAVIGATION TO TRUE - 1");
 });
 
 
-app.listen(3000, () => console.log('app listening on port 3000!'))
+//app.listen(3000, () => console.log('app listening on port 3000!'))
+//app.listen(3000);
+
+var server = http.createServer(app);
+server.setTimeout(5*60*60*1000); // 5 hours
+server.listen(3000);

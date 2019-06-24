@@ -57,18 +57,26 @@
 	<div class="navbar-header">
 	  <a class="navbar-brand" href="/">WOLF</a>
 	</div>
-	<ul class="nav navbar-nav">
+	<ul class="nav navbar-nav" style="padding: 0px 5px;">
 	  <li>
 	    <button class="btn btn-link navbar-btn" onclick="handleVideo()">
 	      Stream Video
 	    </button>
-	  </li>	  
+	  </li>
+	  <li>
+	    <button class="btn btn-success btn-md navbar-btn" onclick="iopOn()">
+	      IOP ON
+	    </button>
+	  </li>
+	  <button class="btn btn-danger btn-md navbar-btn" onclick="iopOff()">
+	    IOP OFF
+	  </button>
 	</ul>
 	<ul class="nav navbar-nav navbar-right" style="padding: 0px 5px;">
 	  <button class="btn btn-success btn-md navbar-btn" onclick="writeFile()">
 	    Run Path
 	  </button>
-	  <button class="btn btn-danger btn-md navbar-btn" onclick="">
+	  <button class="btn btn-danger btn-md navbar-btn" onclick="stopVehicle()">
 	    Stop Vehicle
 	  </button>
 	</ul>
